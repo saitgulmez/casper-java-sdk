@@ -1,5 +1,6 @@
 package com.casper.sdk.service.json.deserialize;
 
+import com.casper.sdk.service.serialization.util.ByteUtils;
 import com.casper.sdk.types.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -14,32 +15,41 @@ import java.io.IOException;
 /**
  * Deserializer for {@link com.casper.sdk.types.CLValue} type object
  */
-public class CLValueJsonDeserializer extends JsonDeserializer<CLValue> {
+public class CLValueJsonDeserializer<T extends CLValue> extends JsonDeserializer<T> {
 
     @Override
-    public CLValue deserialize(JsonParser p, DeserializationContext context) throws IOException {
+    public T deserialize(JsonParser p, DeserializationContext context) throws IOException {
         final ObjectCodec codec = p.getCodec();
-        return getClValue(codec.readTree(p));
+        //noinspection unchecked
+        return (T) getClValue(codec.readTree(p));
     }
 
     private CLValue getClValue(final TreeNode treeNode) {
         final TreeNode typeNode = treeNode.get("cl_type");
         final TextNode bytesNode = (TextNode) treeNode.get("bytes");
-        final CLTypeInfo clTypeInfo = getCLTypeInfo(typeNode);
+        final CLTypeInfo clTypeInfo = getCLTypeInfo(typeNode, bytesNode);
         final Object parsed = getParsed(treeNode.get("parsed"), clTypeInfo);
 
-        if (clTypeInfo instanceof CLOptionTypeInfo) {
+        if (clTypeInfo instanceof CLKeyInfo) {
+            final byte[] bytes = ByteUtils.decodeHex(bytesNode.asText());
+            final CLKeyInfo.KeyType keyType = CLKeyInfo.KeyType.valueOf(bytes[0]);
+            return new CLKeyValue(ByteUtils.lastNBytes(bytes, 32), keyType, parsed);
+        } else if (clTypeInfo instanceof CLOptionTypeInfo) {
             return new CLOptionValue(bytesNode.asText(), ((CLOptionTypeInfo) clTypeInfo), parsed);
         } else {
             return new CLValue(bytesNode.asText(), clTypeInfo, parsed);
         }
     }
 
-    private CLTypeInfo getCLTypeInfo(final TreeNode typeNode) {
+    CLTypeInfo getCLTypeInfo(final TreeNode typeNode, final TextNode bytesNode) {
 
         final CLType clType = getClType(typeNode);
 
-        if (CLType.BYTE_ARRAY == clType) {
+        if (CLType.KEY == clType) {
+            final byte[] bytes = ByteUtils.decodeHex(bytesNode.asText());
+            final CLKeyInfo.KeyType keyType = CLKeyInfo.KeyType.valueOf(bytes[0]);
+            return new CLKeyInfo(keyType);
+        } else if (CLType.BYTE_ARRAY == clType) {
             final TreeNode sizeNode = typeNode.get(CLType.BYTE_ARRAY.getJsonName());
             int size = 0;
             if (sizeNode instanceof NumericNode) {
@@ -48,14 +58,14 @@ public class CLValueJsonDeserializer extends JsonDeserializer<CLValue> {
             return new CLByteArrayInfo(size);
         } else if (CLType.OPTION == clType) {
             final TreeNode optionNode = typeNode.get(CLType.OPTION.getJsonName());
-            final CLTypeInfo interType = getCLTypeInfo(optionNode);
+            final CLTypeInfo interType = getCLTypeInfo(optionNode, bytesNode);
             return new CLOptionTypeInfo(interType);
         } else {
             return new CLTypeInfo(clType);
         }
     }
 
-    private CLType getClType(final TreeNode typeNode) {
+    CLType getClType(final TreeNode typeNode) {
 
         if (typeNode instanceof TextNode) {
             return CLType.fromString(((TextNode) typeNode).asText());
@@ -66,13 +76,19 @@ public class CLValueJsonDeserializer extends JsonDeserializer<CLValue> {
         }
     }
 
-    private Object getParsed(final TreeNode treeNode, CLTypeInfo clTypeInfo) {
-        if (treeNode instanceof TextNode) {
+    Object getParsed(final TreeNode treeNode, final CLTypeInfo clTypeInfo) {
+
+        if (clTypeInfo instanceof CLKeyInfo && treeNode != null) {
+            final TreeNode hashNode = treeNode.get("Hash");
+            if (hashNode instanceof TextNode) {
+                return ((TextNode) hashNode).asText();
+            }
+        } else if (treeNode instanceof TextNode) {
             return ((TextNode) treeNode).asText();
         } else if (treeNode instanceof NumericNode && CLType.isNumeric(clTypeInfo.getType())) {
             return ((NumericNode) treeNode).bigIntegerValue();
-        } else {
-            return null;
         }
+
+        return null;
     }
 }

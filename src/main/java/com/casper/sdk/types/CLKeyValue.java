@@ -2,6 +2,7 @@ package com.casper.sdk.types;
 
 import com.casper.sdk.service.json.serialize.CLKeyValueJsonSerializer;
 import com.casper.sdk.service.serialization.util.ByteUtils;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**

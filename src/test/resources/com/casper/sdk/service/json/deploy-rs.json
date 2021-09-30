@@ -1,0 +1,59 @@
+{
+  "hash": "334faa21b4fe3b493e4d616d5addc798fc87581998760c19d466006c10462bdf",
+  "header": {
+    "account": "01f56e258a89bd12cea9d1d77cd2dd367f5134da564572e1c330fcae5579ad0613",
+    "timestamp": "2021-09-27T09:26:19.372Z",
+    "ttl": "30m",
+    "gas_price": 10,
+    "body_hash": "95c4417ef8debd4978624c231206b63947e1e997dcf521db6fc1158a32005239",
+    "dependencies": [],
+    "chain_name": "integration-test"
+  },
+  "payment": {
+    "ModuleBytes": {
+      "module_bytes": "",
+      "args": [
+        [
+          "amount",
+          {
+            "cl_type": "U512",
+            "bytes": "0500e40b5402",
+            "parsed": "10000000000"
+          }
+        ]
+      ]
+    }
+  },
+  "session": {
+    "StoredContractByHash": {
+      "hash": "f2b72d8584caff8dc1c312fc69459bdb25cb905f50b325b0551596e5f0fa888f",
+      "entry_point": "set_state",
+      "args": [
+        [
+          "instrument",
+          {
+            "cl_type": "String",
+            "bytes": "2400000063393533363033332d333836612d346265642d396235372d666436376333643439646331",
+            "parsed": "c9536033-386a-4bed-9b57-fd67c3d49dc1"
+          }
+        ],
+        [
+          "instrument_state_hash",
+          {
+            "cl_type": "Key",
+            "bytes": "012b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5",
+            "parsed": {
+              "Hash": "hash-2b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5"
+            }
+          }
+        ]
+      ]
+    }
+  },
+  "approvals": [
+    {
+      "signer": "01f56e258a89bd12cea9d1d77cd2dd367f5134da564572e1c330fcae5579ad0613",
+      "signature": "01cca153ec03ebf323c450949c03dc116fbb7ae94abb37557828e54002b92cf4c941c15bc24ad0f9745e3d5d71ddb579694e11c594343f4559baaddba65b37770d"
+    }
+  ]
+}

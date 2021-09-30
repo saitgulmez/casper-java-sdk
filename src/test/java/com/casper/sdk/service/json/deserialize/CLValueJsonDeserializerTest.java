@@ -1,5 +1,8 @@
 package com.casper.sdk.service.json.deserialize;
 
+import com.casper.sdk.service.serialization.util.ByteUtils;
+import com.casper.sdk.types.CLKeyInfo;
+import com.casper.sdk.types.CLKeyValue;
 import com.casper.sdk.types.CLType;
 import com.casper.sdk.types.CLValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +43,15 @@ class CLValueJsonDeserializerTest {
             "  \"parsed\": \"0101010101010101010101010101010101010101010101010101010101010101\"\n" +
             "}";
 
+    private static final String KEY_JSON =
+            "{\n" +
+            "   \"cl_type\": \"Key\",\n" +
+            "   \"bytes\": \"012b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5\",\n" +
+            "   \"parsed\": {\n" +
+            "       \"Hash\": \"hash-2b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5\"\n" +
+            "   }" +
+            "}";
+
     @Test
     void deserializeU512CLValue() throws IOException {
 
@@ -66,5 +78,17 @@ class CLValueJsonDeserializerTest {
         assertThat(clValue.getCLTypeInfo().getType(), is(CLType.U64));
         assertThat(clValue.getBytes(), is(CLValue.fromString("01e703000000000000")));
         assertThat(clValue.getParsed(), is(BigInteger.valueOf(999L)));
+    }
+
+    @Test
+    void deserializeCLKeyValue() throws IOException {
+
+        final CLKeyValue clKeyValue = new ObjectMapper().reader().readValue(KEY_JSON, CLKeyValue.class);
+        assertThat(clKeyValue.getCLTypeInfo().getType(), is(CLType.KEY));
+        assertThat(clKeyValue.getKeyType(), is(CLKeyInfo.KeyType.HASH_ID));
+
+        final byte[] expected = ByteUtils.decodeHex("012b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5");
+        assertThat(clKeyValue.getBytes(), is(expected));
+        assertThat(clKeyValue.getParsed(), is("hash-2b177f0739348d33ce868b2f95bb83decf5b5dcc71279d4bec64c87f60b805d5"));
     }
 }

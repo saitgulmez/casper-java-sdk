@@ -5,6 +5,7 @@ import com.casper.sdk.types.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
@@ -171,7 +172,13 @@ class DeployExecutableFactory {
         StoredContractByName create(final String fieldName, String entryPoint, final TreeNode treeNode, final ObjectCodec codec) {
             try {
                 final List<DeployNamedArg> args = convertArgs(getArgsNode(entryPoint, treeNode), codec);
-                return new StoredContractByName(fieldName, entryPoint, convertModuleBytes(treeNode), args);
+                final Optional<String> entryPointOptional = getFieldValue(entryPoint, treeNode, "entry_point");
+                return new StoredContractByName(
+                        getName(treeNode),
+                        entryPointOptional.orElse(null),
+                        convertModuleBytes(treeNode),
+                        args
+                );
             } catch (Exception e) {
                 throw new ConversionException(e);
             }
@@ -181,6 +188,17 @@ class DeployExecutableFactory {
         protected TreeNode getArgsNode(final String entryPoint, final TreeNode treeNode) {
             return getFieldNode(entryPoint, treeNode, "args");
         }
+
+        private String getName(final TreeNode treeNode) {
+            if (treeNode instanceof ObjectNode) {
+                JsonNode nameNode = ((ObjectNode) treeNode).findValue("name");
+                if (nameNode instanceof TextNode) {
+                    return nameNode.asText();
+                }
+            }
+            return null;
+        }
+
 
         @Override
         protected Class<StoredContractByName> getType() {
@@ -221,6 +239,44 @@ class DeployExecutableFactory {
         }
     }
 
+    /**
+     * Converts JSON into a StoredContractByName such as a payment.
+     */
+    private static class StoredVersionedContractByHashFactory extends AbstractDeployExecutableJsonFactory<StoredVersionedContractByHash> {
+
+        @Override
+        StoredVersionedContractByHash create(final String fieldName, String entryPoint, final TreeNode treeNode, final ObjectCodec codec) {
+            try {
+                final List<DeployNamedArg> args = convertArgs(getArgsNode(entryPoint, treeNode), codec);
+                final Optional<String> hashOptional = getFieldValue(entryPoint, treeNode, "hash");
+                final Optional<String> entryPointOptional = getFieldValue(entryPoint, treeNode, "entry_point");
+                return new StoredVersionedContractByHash(
+                        hashOptional.map(ContractHash::new).orElse(null),
+                        entryPointOptional.orElse(null),
+                        getVersion(treeNode),
+                        args
+                );
+            } catch (Exception e) {
+                throw new ConversionException(e);
+            }
+        }
+
+        private Long getVersion(TreeNode treeNode) {
+            return null;
+        }
+
+
+        @Override
+        protected TreeNode getArgsNode(final String entryPoint, final TreeNode treeNode) {
+            return getFieldNode(entryPoint, treeNode, "args");
+        }
+
+        @Override
+        protected Class<StoredVersionedContractByHash> getType() {
+            return StoredVersionedContractByHash.class;
+        }
+    }
+
     /** The map of field names to DeployExecutable Factories */
     private static final Map<String, AbstractDeployExecutableJsonFactory<?>> argsFactoryMap = new HashMap<>();
 
@@ -228,6 +284,7 @@ class DeployExecutableFactory {
         argsFactoryMap.put("ModuleBytes", new ModuleBytesFactory());
         argsFactoryMap.put("StoredContractByName", new StoredContractByNameFactory());
         argsFactoryMap.put("StoredContractByHash", new StoredContractByHashFactory());
+        argsFactoryMap.put("StoredVersionedContractByHash", new StoredVersionedContractByHashFactory());
         argsFactoryMap.put("Transfer", new TransferJsonFactory());
         argsFactoryMap.put("args", new DefaultDeployExecutableJsonFactory());
     }
