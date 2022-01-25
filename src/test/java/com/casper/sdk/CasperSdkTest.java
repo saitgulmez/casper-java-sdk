@@ -100,6 +100,7 @@ class CasperSdkTest {
         final String eraInfoBySwitchBlock = casperSdk.getEraInfoBySwitchBlock();
         assertThat(eraInfoBySwitchBlock, is(notNullValue()));
         assertThat(eraInfoBySwitchBlock, hasJsonPath("$.era_summary"));
+        System.out.println(eraInfoBySwitchBlock)
     }
 
     @Test
